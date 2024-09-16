@@ -28,9 +28,53 @@ from botcity.web import WebBot, Browser, By
 # Import for integration with BotCity Maestro SDK
 from botcity.maestro import *
 from webdriver_manager.chrome import ChromeDriverManager
+from botcity.plugins.email import BotEmailPlugin
+import pandas as pd
 
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
+
+
+
+
+
+
+def enviar_email(user_email, user_senha, to_email, assunto, conteudo, arquivo_path ):
+    
+    email = BotEmailPlugin()
+
+    email.configure_imap("imap.gmail.com", 993)
+
+    email.configure_smtp("smtp.gmail.com", 587)
+
+    email.login(user_email, user_senha)
+
+    email.send_message(assunto, conteudo, to_email, attachments=arquivo_path, use_html=True)
+     
+    email.disconnect()
+
+    print("E-mail enviado com sucesso!")
+
+
+
+def parametro_emails():
+
+    to = ["sabrina.frazao@ifam.edu.br", "sabrinadasilvafrazao@gmail.com"]
+    subject = "Relatorio_SUS"
+    body = '''Bom dia! 
+            Segue em anexo o relatorio das pessoas que não possuem número SUS'''
+    files = ["docs\RelatorioSUS.xlsx"]
+
+
+    enviar_email(
+        user_email="sabrinadasilvafrazao@gmail.com",
+        user_senha="wsoc rayq oueq weiy",
+        to_email=to,
+        assunto=subject,
+        conteudo=body,
+        arquivo_path=files
+    )
+    
 
 
 def main():
