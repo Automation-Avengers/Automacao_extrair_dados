@@ -35,10 +35,6 @@ import pandas as pd
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
 
-
-
-
-
 def enviar_email(user_email, user_senha, to_email, assunto, conteudo, arquivo_path ):
     
     email = BotEmailPlugin()
@@ -101,8 +97,7 @@ def main():
     # Opens the BotCity website.
     #bot.browse("https://www.botcity.dev")
 
-    # Implement here your logic...
-    ...
+    parametro_emails()
 
     # Wait 3 seconds before closing
     bot.wait(3000)
