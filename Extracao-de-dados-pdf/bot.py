@@ -29,9 +29,26 @@ from botcity.web import WebBot, Browser, By
 from botcity.maestro import *
 from webdriver_manager.chrome import ChromeDriverManager
 
+from botcity.plugins.email import BotEmailPlugin
+from botcity.maestro import *
+import pandas as pd
+import PyPDF2 
+
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
+def salvar_em_excel(dados, caminho_excel):
+    try:
+        df = pd.DataFrame(dados)
+        df.to_excel(caminho_excel, index=False)
+        print(f"Dados salvos em {caminho_excel}")
+    except Exception as e:
+        print(f"Erro ao salvar em Excel: {e}")
+
+def processar_pdf(caminho_pdf, caminho_excel):
+    textos = ler_pdf(caminho_pdf)  #Aqui precisa da função do ler PDF
+    dados = analisar_texto(textos) # Aqui vai chamar a função de analisar o texto 
+    salvar_em_excel(dados, caminho_excel)
 
 def main():
     # Runner passes the server url, the id of the task being executed,
@@ -58,7 +75,7 @@ def main():
     #bot.browse("https://www.botcity.dev")
 
     # Implement here your logic...
-    ...
+    Chamar_A_funcao()
 
     # Wait 3 seconds before closing
     bot.wait(3000)
