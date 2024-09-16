@@ -28,7 +28,7 @@ from botcity.web import WebBot, Browser, By
 # Import for integration with BotCity Maestro SDK
 from botcity.maestro import *
 from webdriver_manager.chrome import ChromeDriverManager
-
+import pandas as pd
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
