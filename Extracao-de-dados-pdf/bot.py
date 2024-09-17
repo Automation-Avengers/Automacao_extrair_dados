@@ -1,84 +1,76 @@
-from botcity.core import DesktopBot
+from botcity.web import WebBot, Browser, By
+
 from botcity.plugins.email import BotEmailPlugin
 from botcity.maestro import *
 import pandas as pd
 import PyPDF2
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
-def ler_pdf(caminho_pdf):
-    texto_pdf = []
+
+# Função para extrair dados do PDF
+def extrair_dados_pdf(caminho_pdf):
     try:
-        with open(caminho_pdf, 'rb') as arquivo:
-            leitor = PyPDF2.PdfReader(arquivo)
-            num_paginas = len(leitor.pages)
-            for i in range(num_paginas):
-                pagina = leitor.pages[i]
-                texto = pagina.extract_text()
-                texto_pdf.append(texto)
+        print("Iniciando a extração de dados do PDF...")
+        with open(caminho_pdf, 'rb') as pdf_file:
+            reader = PyPDF2.PdfReader(pdf_file)
+            num_pages = len(reader.pages)
+            print(f"PDF tem {num_pages} páginas.")
+            dados_extraidos = []
+            for page_num in range(num_pages):
+                page = reader.pages[page_num]
+                text = page.extract_text()
+                if text:
+                    linhas = text.split('\n')  # Dividir o texto por linhas
+                    for linha in linhas:
+                        partes = linha.split()
+                        if len(partes) >= 4 and partes[-1] == 'Não':  # Verifica se "Não" é a última palavra
+                            nome = ' '.join(partes[:-3])  # Tudo antes do CPF
+                            cpf = partes[-3]  # CPF é o terceiro a partir do fim
+                            tem_cartao = partes[-1]  # Sim ou Não
+                            dados_extraidos.append([nome, cpf, tem_cartao])
+                else:
+                    print(f"Nenhum texto encontrado na página {page_num+1}.")
+            return dados_extraidos
     except Exception as e:
-        print(f"Erro ao ler o PDF: {e}")
-    return texto_pdf
+        print(f"Erro ao extrair dados do PDF: {e}")
+        return []
 
-def analisar_texto(texto_pdf):
-    resultado = []
-    for texto in texto_pdf:
-        linhas = texto.strip().split('\n')
-        linhas = linhas[1:]
-        print(linhas)
-        for linha in linhas:
-            partes = linha.split()
-            if len(partes) < 3:
-                print(f"Linha com formato inesperado: {linha}")
-                continue
-            cpf = partes[-2]
-            status = partes[-1]
-            nome = ' '.join(partes[:-2])
-
-            if status == 'Não':
-                resultado.append({'Nome': nome, 'CPF': cpf, 'Status': status})
-
-    return resultado
-
-
+# Função para salvar dados em formato de tabela no Excel
 def salvar_em_excel(dados, caminho_excel):
     try:
-        df = pd.DataFrame(dados)
-        df.to_excel(caminho_excel, index=False)
-        print(f"Dados salvos em {caminho_excel}")
+        if dados:
+            print("Iniciando a criação do arquivo Excel...")
+            # Criar DataFrame com as colunas Nome, CPF, Tem cartão do SUS
+            df = pd.DataFrame(dados, columns=['Nome', 'CPF', 'Tem cartão do SUS'])
+            df.to_excel(caminho_excel, index=False, sheet_name="Relatório Cartão SUS")  # Salvando como tabela
+            print(f"Dados salvos no arquivo Excel: {caminho_excel}")
+        else:
+            print("Nenhum dado para salvar no Excel.")
     except Exception as e:
-        print(f"Erro ao salvar em Excel: {e}")
+        print(f"Erro ao salvar dados no Excel: {e}")
 
+# Função principal para processar o PDF e salvar os dados no Excel
 def processar_pdf(caminho_pdf, caminho_excel):
+    dados = extrair_dados_pdf(caminho_pdf)
+    if dados:
+        salvar_em_excel(dados, caminho_excel)
+        print("Dados processados e salvos com sucesso.")
+    else:
+        print("Nenhum dado foi extraído do PDF.")
 
-    textos = ler_pdf(caminho_pdf)  #Aqui precisa da função do ler PDF
-    dados = analisar_texto(textos) # Aqui vai chamar a função de analisar o texto 
-    salvar_em_excel(dados, caminho_excel)
+# Função para extração e salvamento de dados com entrada de caminhos
+def extrair_e_salvar_dados_entrada(caminho_pdf, caminho_excel):
+    processar_pdf(caminho_pdf, caminho_excel)
 
-    textos = ler_pdf(caminho_pdf)
-    dados = analisar_texto(textos)
-    salvar_em_excel(dados, caminho_excel)
-    
 
 
 def main():
     maestro = BotMaestroSDK.from_sys_args()
     execucao = maestro.get_execution()
 
-    print(f"ID da Tarefa é: {execucao.task_id}")
-    print(f"Parâmetros da Tarefa são: {execucao.parameters}")
-
-    bot = DesktopBot()
-    bot.browse("http://www.botcity.dev")
-
-    caminho_pdf = 'Controle_SUS.pdf'
-    caminho_excel = 'Dados.xlsx'
-    processar_pdf(caminho_pdf, caminho_excel)
-    
-def not_found(label):
-    print(f"Element not found: {label}")
-    
     bot = WebBot()
 
     # Configure whether or not to run on headless mode
@@ -94,20 +86,11 @@ def not_found(label):
     #bot.browse("https://www.botcity.dev")
 
 
-    Chamar_A_funcao()
-
-
-    caminho_pdf = 'Controle_SUS.pdf'  
-    caminho_excel = 'relatorio_cartao_sus.xlsx'
- 
-    dados = extrair_dados_pdf(caminho_pdf)
+    caminho_pdf = r"docs\Controle_SUS.pdf"
+    caminho_excel = r'docs\relatorio_cartao_sus.xlsx'
     
-    if dados:
-     
-        salvar_dados_excel(dados, caminho_excel)
-          
-    else:
-        print("Nenhum dado foi extraído do PDF. O processo foi interrompido.")
+    extrair_e_salvar_dados_entrada(caminho_pdf, caminho_excel)
+  
 
     # Wait 3 seconds before closing
     bot.wait(3000)
