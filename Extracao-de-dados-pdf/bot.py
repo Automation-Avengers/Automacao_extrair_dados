@@ -53,6 +53,7 @@ def processar_pdf(caminho_pdf, caminho_excel):
     dados = analisar_texto(textos)
     salvar_em_excel(dados, caminho_excel)
     
+
 def main():
     maestro = BotMaestroSDK.from_sys_args()
     execucao = maestro.get_execution()
@@ -69,6 +70,55 @@ def main():
     
 def not_found(label):
     print(f"Element not found: {label}")
+    
+    bot = WebBot()
 
+    # Configure whether or not to run on headless mode
+    bot.headless = False
+
+    # Uncomment to change the default Browser to Firefox
+    bot.browser = Browser.CHROME
+
+    # Uncomment to set the WebDriver path
+    bot.driver_path = ChromeDriverManager().install()
+
+    # Opens the BotCity website.
+    #bot.browse("https://www.botcity.dev")
+
+    # Implement here your logic...
+
+    caminho_pdf = 'Controle_SUS.pdf'  
+    caminho_excel = 'relatorio_cartao_sus.xlsx'
+ 
+    dados = extrair_dados_pdf(caminho_pdf)
+    
+    if dados:
+     
+        salvar_dados_excel(dados, caminho_excel)
+          
+    else:
+        print("Nenhum dado foi extraído do PDF. O processo foi interrompido.")
+
+
+    # Wait 3 seconds before closing
+    bot.wait(3000)
+
+    # Finish and clean up the Web Browser
+    # You MUST invoke the stop_browser to avoid
+    # leaving instances of the webdriver open
+    bot.stop_browser()
+
+    # Uncomment to mark this task as finished on BotMaestro
+    # maestro.finish_task(
+    #     task_id=execution.task_id,
+    #     status=AutomationTaskFinishStatus.SUCCESS,
+    #     message="Task Finished OK."
+    # )
+
+def not_found(label):
+    print(f"Element not found: {label}")
+    
 if __name__ == '__main__':
+
+    
     main()
