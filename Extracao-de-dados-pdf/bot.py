@@ -30,6 +30,8 @@ from botcity.maestro import *
 from webdriver_manager.chrome import ChromeDriverManager
 from botcity.plugins.email import BotEmailPlugin
 import pandas as pd
+import os
+from dotenv import load_dotenv
 
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
@@ -55,6 +57,8 @@ def enviar_email(user_email, user_senha, to_email, assunto, conteudo, arquivo_pa
 
 def parametro_emails():
 
+    load_dotenv()
+
     to = ["sabrina.frazao@ifam.edu.br", "sabrinadasilvafrazao@gmail.com"]
     subject = "Relatorio_SUS"
     body = '''Bom dia! 
@@ -64,7 +68,7 @@ def parametro_emails():
 
     enviar_email(
         user_email="sabrinadasilvafrazao@gmail.com",
-        user_senha="wsoc rayq oueq weiy",
+        user_senha= os.getenv('SMTP_PASSWORD'),
         to_email=to,
         assunto=subject,
         conteudo=body,
