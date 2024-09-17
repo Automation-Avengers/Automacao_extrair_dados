@@ -1,97 +1,76 @@
-"""
-WARNING:
-
-Please make sure you install the bot dependencies with `pip install --upgrade -r requirements.txt`
-in order to get all the dependencies on your Python environment.
-
-Also, if you are using PyCharm or another IDE, make sure that you use the SAME Python interpreter
-as your IDE.
-
-If you get an error like:
-```
-ModuleNotFoundError: No module named 'botcity'
-```
-
-This means that you are likely using a different Python interpreter than the one used to install the dependencies.
-To fix this, you can either:
-- Use the same interpreter as your IDE and install your bot with `pip install --upgrade -r requirements.txt`
-- Use the same interpreter as the one used to install the bot (`pip install --upgrade -r requirements.txt`)
-
-Please refer to the documentation for more information at
-https://documentation.botcity.dev/tutorials/python-automations/web/
-"""
-
-
-# Import for the Web Bot
-from botcity.web import WebBot, Browser, By
-
-# Import for integration with BotCity Maestro SDK
+from botcity.core import DesktopBot
+from botcity.plugins.email import BotEmailPlugin
 from botcity.maestro import *
-from webdriver_manager.chrome import ChromeDriverManager
-
+import pandas as pd
 import PyPDF2
 
-import pandas as pd
-
-# Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
-
-# Função para extrair dados do PDF
-def extrair_dados_pdf(caminho_pdf):
+def ler_pdf(caminho_pdf):
+    texto_pdf = []
     try:
-        print("Iniciando a extração de dados do PDF...")
-        with open(caminho_pdf, 'rb') as pdf_file:
-            reader = PyPDF2.PdfReader(pdf_file)
-            num_pages = len(reader.pages)
-            print(f"PDF tem {num_pages} páginas.")
-            dados_extraidos = []
-            for page_num in range(num_pages):
-                page = reader.pages[page_num]
-                text = page.extract_text()
-                if text:
-                    linhas = text.split('\n')  # Dividir o texto por linhas
-                    for linha in linhas:
-                        # Verificar se a linha contém o formato esperado: Nome, CPF e "Sim"
-                        partes = linha.split()
-                        if len(partes) >= 4 and partes[-1] == 'Não':  # Verifica se "não" é a última palavra
-                            nome = ' '.join(partes[:-3])  # Tudo antes do CPF
-                            cpf = partes[-3]  # CPF é o terceiro a partir do fim
-                            tem_cartao = partes[-1]  # Sim ou Não
-                            dados_extraidos.append([nome, cpf, tem_cartao])
-                else:
-                    print(f"Nenhum texto encontrado na página {page_num+1}.")
-            return dados_extraidos
+        with open(caminho_pdf, 'rb') as arquivo:
+            leitor = PyPDF2.PdfReader(arquivo)
+            num_paginas = len(leitor.pages)
+            for i in range(num_paginas):
+                pagina = leitor.pages[i]
+                texto = pagina.extract_text()
+                texto_pdf.append(texto)
     except Exception as e:
-        print(f"Erro ao extrair dados do PDF: {e}")
-        return []
+        print(f"Erro ao ler o PDF: {e}")
+    return texto_pdf
 
-# Função para salvar dados em formato de tabela no Excel
-def salvar_dados_excel(dados, caminho_excel):
+def analisar_texto(texto_pdf):
+    resultado = []
+    for texto in texto_pdf:
+        linhas = texto.strip().split('\n')
+        linhas = linhas[1:]
+        print(linhas)
+        for linha in linhas:
+            partes = linha.split()
+            if len(partes) < 3:
+                print(f"Linha com formato inesperado: {linha}")
+                continue
+            cpf = partes[-2]
+            status = partes[-1]
+            nome = ' '.join(partes[:-2])
+
+            if status == 'Não':
+                resultado.append({'Nome': nome, 'CPF': cpf, 'Status': status})
+
+    return resultado
+
+def salvar_em_excel(dados, caminho_excel):
     try:
-        if dados:
-            print("Iniciando a criação do arquivo Excel...")
-            # Criar DataFrame com as colunas Nome, CPF, Tem cartão do SUS
-            df = pd.DataFrame(dados, columns=['Nome', 'CPF', 'Tem cartão do SUS'])
-            df.to_excel(caminho_excel, index=False, sheet_name="Relatório Cartão SUS")  # Salvando como tabela
-            print(f"Dados salvos no arquivo Excel: {caminho_excel}")
-        else:
-            print("Nenhum dado para salvar no Excel.")
+        df = pd.DataFrame(dados)
+        df.to_excel(caminho_excel, index=False)
+        print(f"Dados salvos em {caminho_excel}")
     except Exception as e:
-        print(f"Erro ao salvar dados no Excel: {e}")
+        print(f"Erro ao salvar em Excel: {e}")
 
-            
+def processar_pdf(caminho_pdf, caminho_excel):
+    textos = ler_pdf(caminho_pdf)
+    dados = analisar_texto(textos)
+    salvar_em_excel(dados, caminho_excel)
+    
 
 def main():
-    # Runner passes the server url, the id of the task being executed,
-    # the access token and the parameters that this task receives (when applicable).
     maestro = BotMaestroSDK.from_sys_args()
-    ## Fetch the BotExecution with details from the task, including parameters
-    execution = maestro.get_execution()
+    execucao = maestro.get_execution()
 
-    print(f"Task ID is: {execution.task_id}")
-    print(f"Task Parameters are: {execution.parameters}")
+    print(f"ID da Tarefa é: {execucao.task_id}")
+    print(f"Parâmetros da Tarefa são: {execucao.parameters}")
 
+    bot = DesktopBot()
+    bot.browse("http://www.botcity.dev")
+
+    caminho_pdf = 'Controle_SUS.pdf'
+    caminho_excel = 'Dados.xlsx'
+    processar_pdf(caminho_pdf, caminho_excel)
+    
+def not_found(label):
+    print(f"Element not found: {label}")
+    
     bot = WebBot()
 
     # Configure whether or not to run on headless mode
@@ -139,7 +118,6 @@ def main():
 def not_found(label):
     print(f"Element not found: {label}")
     
-
 if __name__ == '__main__':
 
     
