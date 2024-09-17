@@ -4,6 +4,7 @@ from botcity.maestro import *
 import pandas as pd
 import PyPDF2
 
+# Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
 
 def ler_pdf(caminho_pdf):
@@ -40,6 +41,7 @@ def analisar_texto(texto_pdf):
 
     return resultado
 
+
 def salvar_em_excel(dados, caminho_excel):
     try:
         df = pd.DataFrame(dados)
@@ -49,10 +51,16 @@ def salvar_em_excel(dados, caminho_excel):
         print(f"Erro ao salvar em Excel: {e}")
 
 def processar_pdf(caminho_pdf, caminho_excel):
+
+    textos = ler_pdf(caminho_pdf)  #Aqui precisa da função do ler PDF
+    dados = analisar_texto(textos) # Aqui vai chamar a função de analisar o texto 
+    salvar_em_excel(dados, caminho_excel)
+
     textos = ler_pdf(caminho_pdf)
     dados = analisar_texto(textos)
     salvar_em_excel(dados, caminho_excel)
     
+
 
 def main():
     maestro = BotMaestroSDK.from_sys_args()
@@ -85,7 +93,9 @@ def not_found(label):
     # Opens the BotCity website.
     #bot.browse("https://www.botcity.dev")
 
-    # Implement here your logic...
+
+    Chamar_A_funcao()
+
 
     caminho_pdf = 'Controle_SUS.pdf'  
     caminho_excel = 'relatorio_cartao_sus.xlsx'
@@ -98,7 +108,6 @@ def not_found(label):
           
     else:
         print("Nenhum dado foi extraído do PDF. O processo foi interrompido.")
-
 
     # Wait 3 seconds before closing
     bot.wait(3000)
