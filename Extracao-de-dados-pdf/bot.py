@@ -67,6 +67,7 @@ def processar_pdf(caminho_pdf, caminho_excel):
         print("Nenhum dado foi extraído do PDF.")
 
 
+# Envio do relátorio pelo email
 def enviar_email(user_email, user_senha, to_email, assunto, conteudo, arquivo_path ):
     email = BotEmailPlugin()
 
@@ -83,6 +84,7 @@ def enviar_email(user_email, user_senha, to_email, assunto, conteudo, arquivo_pa
     print("E-mail enviado com sucesso!")
 
 
+# Parametro para o envio dos emails
 def parametro_emails():
 
     load_dotenv()
