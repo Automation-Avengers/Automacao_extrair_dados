@@ -1,41 +1,46 @@
-"""
-WARNING:
-
-Please make sure you install the bot dependencies with `pip install --upgrade -r requirements.txt`
-in order to get all the dependencies on your Python environment.
-
-Also, if you are using PyCharm or another IDE, make sure that you use the SAME Python interpreter
-as your IDE.
-
-If you get an error like:
-```
-ModuleNotFoundError: No module named 'botcity'
-```
-
-This means that you are likely using a different Python interpreter than the one used to install the dependencies.
-To fix this, you can either:
-- Use the same interpreter as your IDE and install your bot with `pip install --upgrade -r requirements.txt`
-- Use the same interpreter as the one used to install the bot (`pip install --upgrade -r requirements.txt`)
-
-Please refer to the documentation for more information at
-https://documentation.botcity.dev/tutorials/python-automations/web/
-"""
-
-
-# Import for the Web Bot
-from botcity.web import WebBot, Browser, By
-
-# Import for integration with BotCity Maestro SDK
-from botcity.maestro import *
-from webdriver_manager.chrome import ChromeDriverManager
-
+from botcity.core import DesktopBot
 from botcity.plugins.email import BotEmailPlugin
 from botcity.maestro import *
 import pandas as pd
-import PyPDF2 
+import PyPDF2
 
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
+
+def ler_pdf(caminho_pdf):
+    texto_pdf = []
+    try:
+        with open(caminho_pdf, 'rb') as arquivo:
+            leitor = PyPDF2.PdfReader(arquivo)
+            num_paginas = len(leitor.pages)
+            for i in range(num_paginas):
+                pagina = leitor.pages[i]
+                texto = pagina.extract_text()
+                texto_pdf.append(texto)
+    except Exception as e:
+        print(f"Erro ao ler o PDF: {e}")
+    return texto_pdf
+
+def analisar_texto(texto_pdf):
+    resultado = []
+    for texto in texto_pdf:
+        linhas = texto.strip().split('\n')
+        linhas = linhas[1:]
+        print(linhas)
+        for linha in linhas:
+            partes = linha.split()
+            if len(partes) < 3:
+                print(f"Linha com formato inesperado: {linha}")
+                continue
+            cpf = partes[-2]
+            status = partes[-1]
+            nome = ' '.join(partes[:-2])
+
+            if status == 'Não':
+                resultado.append({'Nome': nome, 'CPF': cpf, 'Status': status})
+
+    return resultado
+
 
 def salvar_em_excel(dados, caminho_excel):
     try:
@@ -46,20 +51,34 @@ def salvar_em_excel(dados, caminho_excel):
         print(f"Erro ao salvar em Excel: {e}")
 
 def processar_pdf(caminho_pdf, caminho_excel):
+
     textos = ler_pdf(caminho_pdf)  #Aqui precisa da função do ler PDF
     dados = analisar_texto(textos) # Aqui vai chamar a função de analisar o texto 
     salvar_em_excel(dados, caminho_excel)
 
+    textos = ler_pdf(caminho_pdf)
+    dados = analisar_texto(textos)
+    salvar_em_excel(dados, caminho_excel)
+    
+
+
 def main():
-    # Runner passes the server url, the id of the task being executed,
-    # the access token and the parameters that this task receives (when applicable).
     maestro = BotMaestroSDK.from_sys_args()
-    ## Fetch the BotExecution with details from the task, including parameters
-    execution = maestro.get_execution()
+    execucao = maestro.get_execution()
 
-    print(f"Task ID is: {execution.task_id}")
-    print(f"Task Parameters are: {execution.parameters}")
+    print(f"ID da Tarefa é: {execucao.task_id}")
+    print(f"Parâmetros da Tarefa são: {execucao.parameters}")
 
+    bot = DesktopBot()
+    bot.browse("http://www.botcity.dev")
+
+    caminho_pdf = 'Controle_SUS.pdf'
+    caminho_excel = 'Dados.xlsx'
+    processar_pdf(caminho_pdf, caminho_excel)
+    
+def not_found(label):
+    print(f"Element not found: {label}")
+    
     bot = WebBot()
 
     # Configure whether or not to run on headless mode
@@ -74,8 +93,21 @@ def main():
     # Opens the BotCity website.
     #bot.browse("https://www.botcity.dev")
 
-    # Implement here your logic...
+
     Chamar_A_funcao()
+
+
+    caminho_pdf = 'Controle_SUS.pdf'  
+    caminho_excel = 'relatorio_cartao_sus.xlsx'
+ 
+    dados = extrair_dados_pdf(caminho_pdf)
+    
+    if dados:
+     
+        salvar_dados_excel(dados, caminho_excel)
+          
+    else:
+        print("Nenhum dado foi extraído do PDF. O processo foi interrompido.")
 
     # Wait 3 seconds before closing
     bot.wait(3000)
@@ -92,10 +124,10 @@ def main():
     #     message="Task Finished OK."
     # )
 
-
 def not_found(label):
     print(f"Element not found: {label}")
-
-
+    
 if __name__ == '__main__':
+
+    
     main()
