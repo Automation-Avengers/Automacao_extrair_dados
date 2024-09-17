@@ -32,8 +32,8 @@ def extrair_dados_pdf(caminho_pdf):
                     for linha in linhas:
                         partes = linha.split()
                         if len(partes) >= 4 and partes[-1] == 'Não':  # Verifica se "Não" é a última palavra
-                            nome = ' '.join(partes[:-3])  # Tudo antes do CPF
-                            cpf = partes[-3]  # CPF é o terceiro a partir do fim
+                            nome = ' '.join(partes[:2])  # Tudo antes do CPF
+                            cpf = partes[-2]  # CPF é o terceiro a partir do fim
                             tem_cartao = partes[-1]  # Sim ou Não
                             dados_extraidos.append([nome, cpf, tem_cartao])
                 else:
